@@ -91,7 +91,7 @@ public class MyServer extends Observable implements Runnable {
             case "group":
               sendGroup(bf.readLine());
               break;
-            default:
+            case "file":
               sendFile(bf.readLine());
           }
         } while (!a.equals("close"));
