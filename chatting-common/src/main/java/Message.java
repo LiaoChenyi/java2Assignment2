@@ -1,4 +1,3 @@
-package cn.edu.sustech.cs209.chatting.common;
 
 public class Message {
 
@@ -31,5 +30,10 @@ public class Message {
 
     public String getData() {
         return data;
+    }
+    @Override
+    public String toString() {
+        return timestamp  + " " + sentBy + " " + sendTo + " "
+          + data;
     }
 }

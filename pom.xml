@@ -23,12 +23,24 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>cn.edu.sustech.cs209.chatting</groupId>
+                <groupId>cn.edu.sustech.chs209.chatting</groupId>
                 <artifactId>chatting-common</artifactId>
                 <version>dev-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>hu.blackbelt.bundles.poi</groupId>
+            <artifactId>org.apache.poi</artifactId>
+            <version>4.1.2_2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.2.2</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
