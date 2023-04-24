@@ -1,20 +1,15 @@
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import javafx.stage.StageStyle;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -22,249 +17,251 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javafx.concurrent.Task;
-import javafx.scene.control.Alert.AlertType;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
-import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Callback;
-import java.net.URL;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.ResourceBundle;
-
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 public class Controller implements Initializable {
-    FileInputStream fileInputStream;
-    DataInputStream ds;
-    Map<String, ListView<Message>> savedListView = new HashMap<>();
-    Map<String, List<String>> savedListFile = new HashMap<>();
+  FileInputStream fileInputStream;
+  DataInputStream ds;
+  Map<String, ListView<Message>> savedListView = new HashMap<>();
+  Map<String, List<String>> savedListFile = new HashMap<>();
+  
+  Map<String, String> getSavedListFile = new HashMap<>();
     
-    Map<String, String> getSavedListFile = new HashMap<>();
-    
-    public Socket socket;
-    public HBox title;
-    private double xOffset = 0;
-    private double yOffset = 0;
+  public Socket socket;
+  public HBox title;
+  private double xOffset = 0;
+  private double yOffset = 0;
 
-    public Button close;
-    public Button minimize;
-    public Button maximize;
-    boolean maximized;
+  public Button close;
+  public Button minimize;
+  public Button maximize;
+  boolean maximized;
     
-    String toUsername;
-    @FXML
-    TextField containListTitle;
-    @FXML
-    Button privateChat;
-    @FXML
-    Button groupChat;
-    @FXML
-    Button groupList;
-    @FXML
-    Button showGroupList;
-    List<String> toUsernames;
+  String toUsername;
+  @FXML
+  TextField containListTitle;
+  @FXML
+  Button privateChat;
+  @FXML
+  Button groupChat;
+  @FXML
+  Button groupList;
+  @FXML
+  Button showGroupList;
+  List<String> toUsernames;
     
-    List<List<String>> groups = new ArrayList<>();
+  List<List<String>> groups = new ArrayList<>();
     
-    List<String> files = new ArrayList<>();
-    public ListView<String> chatList;
-    public TextArea inputArea;
-    public Label currentUsername;
-    public Label currentOnlineCnt;
-    @FXML
-    TextField userCnt;
-    Stage stage;
-    @FXML
-    Button fileList;
-    @FXML
-    TextField left;
-    BufferedReader bf;
+  List<String> files = new ArrayList<>();
+  public ListView<String> chatList;
+  public TextArea inputArea;
+  public Label currentUsername;
+  public Label currentOnlineCnt;
+  @FXML
+  TextField userCnt;
+  Stage stage;
+  @FXML
+  Button fileList;
+  @FXML
+  TextField left;
+  BufferedReader bf;
     
-    OutputStream os;
-    @FXML
-    ListView<Message> chatContentList;
+  OutputStream os;
+  @FXML
+  ListView<Message> chatContentList;
 
-    String username;
+  String username;
 
-    @Override
-    public void initialize (URL url, ResourceBundle resourceBundle) {
-        Stage stage = new Stage();
-        stage.initStyle(StageStyle.TRANSPARENT);
-        containListTitle.setEditable(false);
-        inputArea.setVisible(false);
-        chatContentList.setVisible(false);
-        left.setEditable(false);
-        userCnt.setEditable(false);
-        groupList.setOnAction(event -> Platform.runLater(() -> setDialog("当前无群组")));
-        close.setOnAction(actionEvent -> {
-            try {
-                socket.getOutputStream().write("close\n".getBytes());
-            } catch (IOException e) {
-                System.out.println("关闭失败");
-            }
-            System.out.println("客户端退出");
-            try {
-                save();
-            } catch (IOException e) {
-                System.out.println("保存信息失败");
-            }
-            Platform.exit();
-            System.exit(0);
-        });
-        maximize.setOnAction(actionEvent -> ((Stage) maximize.getScene().getWindow()).setMaximized(maximized = !maximized));
-        minimize.setOnAction(actionEvent -> ((Stage) minimize.getScene().getWindow()).setIconified(true));
-        title.setOnMousePressed(event -> {
-            xOffset = event.getSceneX();
-            yOffset = event.getSceneY();
-        });
-    
-        title.setOnMouseDragged(event -> {
-            maximize.getScene().getWindow().setX(event.getScreenX() - xOffset);
-            maximize.getScene().getWindow().setY(event.getScreenY() - yOffset);
-        });
-        TextField textField1 = new TextField();
-        TextField textField2 = new TextField();
-        Label l1 = new Label("用户名");
-        Label l2 = new Label("密码");
-        Button login = new Button("登录");
-        Button signUp = new Button("注册");
-        Button exit = new Button("退出");
-        exit.setOnAction(event -> {
+  @Override
+  public void initialize(URL url, ResourceBundle resourceBundle) {
+    Stage stage = new Stage();
+    stage.initStyle(StageStyle.TRANSPARENT);
+    containListTitle.setEditable(false);
+    inputArea.setVisible(false);
+    chatContentList.setVisible(false);
+    left.setEditable(false);
+    userCnt.setEditable(false);
+    groupList.setOnAction(event -> Platform.runLater(() -> setDialog("当前无群组")));
+    close.setOnAction(actionEvent -> {
+      try {
+        socket.getOutputStream().write("close\n".getBytes());
+      } catch (IOException e) {
+        System.out.println("关闭失败");
+      }
+      System.out.println("客户端退出");
+      try {
+        save();
+      } catch (IOException e) {
+        System.out.println("保存信息失败");
+      }
+      Platform.exit();
+      System.exit(0);
+    });
+    maximize.setOnAction(actionEvent -> ((Stage) maximize.getScene().getWindow())
+        .setMaximized(maximized = !maximized));
+    minimize.setOnAction(actionEvent -> ((Stage) minimize.getScene().getWindow())
+        .setIconified(true));
+    title.setOnMousePressed(event -> {
+      xOffset = event.getSceneX();
+      yOffset = event.getSceneY();
+    });
+    title.setOnMouseDragged(event -> {
+      maximize.getScene().getWindow().setX(event.getScreenX() - xOffset);
+      maximize.getScene().getWindow().setY(event.getScreenY() - yOffset);
+    });
+    TextField textField1 = new TextField();
+    TextField textField2 = new TextField();
+    Label l1 = new Label("用户名");
+    Label l2 = new Label("密码");
+    Button login = new Button("登录");
+    Button signUp = new Button("注册");
+    Button exit = new Button("退出");
+    exit.setOnAction(event -> {
+      stage.close();
+      System.exit(0);
+    });
+    login.setOnAction(event -> {
+      File file = new File("D:/COURSE/assignment/CS209/java2Assignment2/用户信息/"
+          + textField1.getText() + ".txt");
+      if (!file.exists()) {
+        setDialog("用户不存在");
+        return;
+      }
+      try {
+        StringBuilder stringBuilder = new StringBuilder();
+        int a;
+        FileReader fr = new FileReader(file);
+        while ((a = fr.read()) != -1) {
+          stringBuilder.append((char) a);
+        }
+        if (!textField2.getText().isEmpty()
+            && stringBuilder.toString().equals(textField2.getText())) {
+          try {
             stage.close();
-            System.exit(0);
-        });
-        login.setOnAction(event -> {
-            File file = new File("D:/COURSE/assignment/CS209/java2Assignment2/用户信息/" + textField1.getText() + ".txt");
-            if (!file.exists()) {
-                setDialog("用户不存在");
-                return;
+            while (true) {
+              socket = new Socket("localhost",1234);
+              os = socket.getOutputStream();
+              os.write((textField1.getText() +"\n").getBytes());
+              bf = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+              if (Objects.equals(bf.readLine(), "")) {
+                username = textField1.getText();
+                left.setText(username);
+                break;
+              }
+              setDialog("不能重复登录");
+              stage.showAndWait();
             }
-            try {
-                StringBuilder stringBuilder = new StringBuilder();
-                int a;
-                FileReader fr = new FileReader(file);
-                while ((a = fr.read())!= -1) {
-                    stringBuilder.append((char) a);
+          } catch (IOException e) {
+            System.out.println("无法连接到服务器");
+          }
+          StringBuilder stringBuilder1 = new StringBuilder();
+          int aa;
+          file = new File("D:/COURSE/assignment/CS209/java2Assignment2/聊天记录/" + username + "/savedListFile.txt");
+          if (file.exists()) {
+            fr = new FileReader(file);
+            while ((aa = fr.read())!= -1) {
+              stringBuilder1.append((char) aa);
+            }
+            int start = 0;
+            int initial = 0;
+            int finial = 0;
+            String substring = stringBuilder1.substring(1, stringBuilder1.length() - 1);
+            for (int i = 0; i < substring.length(); i++) {
+              if (substring.charAt(i) == '=') {
+                savedListFile.put(substring.substring(initial, i), new ArrayList<>());
+                finial = i;
+                start = i + 1;
+              } else if (substring.charAt(i) == '[') {
+                start = i + 1;
+              } else if (substring.charAt(i) == ',' ) {
+                if (initial == i) {
+                  initial = i + 1;
+                } else {
+                  savedListFile.get(substring.substring(initial, finial)).add(substring.substring(start, i));
                 }
-                if (!textField2.getText().isEmpty() && stringBuilder.toString().equals(textField2.getText())) {
-                    try {
-                        stage.close();
-                        while (true) {
-                            socket = new Socket("localhost",1234);
-                            os = socket.getOutputStream();
-                            os.write((textField1.getText() +"\n").getBytes());
-                            bf = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                            if (Objects.equals(bf.readLine(), "")) {
-                                username = textField1.getText();
-                                left.setText(username);
-                                break;
-                            }
-                            setDialog("不能重复登录");
-                            stage.showAndWait();
-                        }
-                    } catch (IOException e) {
-                        System.out.println("无法连接到服务器");
-                    }
-                    StringBuilder stringBuilder1 = new StringBuilder();
-                    int aa;
-                    file = new File("D:/COURSE/assignment/CS209/java2Assignment2/聊天记录/" + username + "/savedListFile.txt");
-                    if (file.exists()) {
-                        fr = new FileReader(file);
-                        while ((aa = fr.read())!= -1) {
-                            stringBuilder1.append((char) aa);
-                        }
-                        int start = 0;
-                        int initial = 0;
-                        int finial = 0;
-                        String substring = stringBuilder1.substring(1, stringBuilder1.length() - 1);
-                        for (int i = 0; i < substring.length(); i++) {
-                            if (substring.charAt(i) == '=') {
-                                savedListFile.put(substring.substring(initial, i), new ArrayList<>());
-                                finial = i;
-                                start = i + 1;
-                            } else if (substring.charAt(i) == '[') {
-                                start = i + 1;
-                            } else if (substring.charAt(i) == ',' ) {
-                                if (initial == i) {
-                                    initial = i + 1;
-                                } else {
-                                    savedListFile.get(substring.substring(initial, finial)).add(substring.substring(start, i));
-                                }
-                                start = i + 1;
-                            } else if (substring.charAt(i) == ']') {
-                                savedListFile.get(substring.substring(initial, finial)).add(substring.substring(start, i));
-                                start = i + 1;
-                                initial = start;
-                            }
-                        }
-                        stringBuilder1.delete(0, stringBuilder1.length());
-                    }
-                    file = new File("D:/COURSE/assignment/CS209/java2Assignment2/聊天记录/" + username + "/getSavedListFile.txt");
-                    if (file.exists()) {
-                        fr = new FileReader(file);
-                        while ((aa = fr.read())!= -1) {
-                            stringBuilder1.append((char) aa);
-                        }
-                        String substring = stringBuilder1.substring(1, stringBuilder1.length() - 1);
-                        String[] strings = substring.split(",");
-                        for (String string : strings) {
-                            String[] split = string.split("=");
-                            if (split.length < 2) continue;
-                            getSavedListFile.put(split[0], split[1]);
-                        }
-                        stringBuilder1.delete(0, stringBuilder1.length());
-                    }
-                    file = new File("D:/COURSE/assignment/CS209/java2Assignment2/聊天记录/" + username + "/savedListView.txt");
-                    if (file.exists()) {
-                        fr = new FileReader(file);
-                        while ((aa = fr.read())!= -1) {
-                            if (stringBuilder1.length() > 0 && stringBuilder1.substring(
-                              stringBuilder1.length() - 1, stringBuilder1.length()).equals(",")
-                            && (char) aa == ' ') continue;
-                            stringBuilder1.append((char) aa);
-                        }
-                        String[] strings = stringBuilder1.toString().split("\t");
-                        for (String string : strings) {
-                            String[] split = string.split("=");
-                            if (split.length < 2) continue;
-                            savedListView.put(split[0], new ListView<>());
-                            StringBuilder stringBuilder2 = new StringBuilder(split[1]);
-                            String substring = stringBuilder2.substring(1, stringBuilder2.length() - 1);
-                            String[] messages = substring.split(",");
-                            for (String message : messages) {
-                                String[] aaa = new String[4];
-                                Pattern pattern = Pattern.compile(" ");
-                                Matcher matcher = pattern.matcher(message);
-                                int j = 0;
-                                int index = 0;
-                                while (matcher.find()) {
-                                    aaa[j++] = message.substring(index, matcher.start());
-                                    index = matcher.start() + 1;
-                                    if (j == 3) {
-                                        aaa[j] = message.substring(index);
-                                        break;
-                                    }
-                                }
-                                savedListView.get(split[0]).getItems().add(new Message(Long.parseLong(aaa[0]), aaa[1], aaa[2], aaa[3]));
-                            }
-                        }
-                        stringBuilder1.delete(0, stringBuilder1.length());
-                    }
-                    chatContentList.setCellFactory(new MessageCellFactory());
-                    Task task = new Task() {
-                        @Override
-                        protected Object call() throws IOException {
+                start = i + 1;
+              } else if (substring.charAt(i) == ']') {
+                savedListFile.get(substring.substring(initial, finial)).add(substring.substring(start, i));
+                start = i + 1;
+                initial = start;
+              }
+            }
+            stringBuilder1.delete(0, stringBuilder1.length());
+          }
+          file = new File("D:/COURSE/assignment/CS209/java2Assignment2/聊天记录/" + username + "/getSavedListFile.txt");
+          if (file.exists()) {
+            fr = new FileReader(file);
+            while ((aa = fr.read())!= -1) {
+              stringBuilder1.append((char) aa);
+            }
+            String substring = stringBuilder1.substring(1, stringBuilder1.length() - 1);
+            String[] strings = substring.split(",");
+            for (String string : strings) {
+              String[] split = string.split("=");
+              if (split.length < 2) continue;
+              getSavedListFile.put(split[0], split[1]);
+            }
+            stringBuilder1.delete(0, stringBuilder1.length());
+          }
+          file = new File("D:/COURSE/assignment/CS209/java2Assignment2/聊天记录/" + username + "/savedListView.txt");
+          if (file.exists()) {
+            fr = new FileReader(file);
+            while ((aa = fr.read())!= -1) {
+              if (stringBuilder1.length() > 0 && stringBuilder1.substring(
+                stringBuilder1.length() - 1, stringBuilder1.length()).equals(",")
+                && (char) aa == ' ') continue;
+              stringBuilder1.append((char) aa);
+            }
+            String[] strings = stringBuilder1.toString().split("\t");
+            for (String string : strings) {
+              String[] split = string.split("=");
+              if (split.length < 2) continue;
+              savedListView.put(split[0], new ListView<>());
+              StringBuilder stringBuilder2 = new StringBuilder(split[1]);
+              String substring = stringBuilder2.substring(1, stringBuilder2.length() - 1);
+              String[] messages = substring.split(",");
+              for (String message : messages) {
+                String[] aaa = new String[4];
+                Pattern pattern = Pattern.compile(" ");
+                Matcher matcher = pattern.matcher(message);
+                int j = 0;
+                int index = 0;
+                while (matcher.find()) {
+                  aaa[j++] = message.substring(index, matcher.start());
+                  index = matcher.start() + 1;
+                  if (j == 3) {
+                    aaa[j] = message.substring(index);
+                    break;
+                  }
+                }
+                savedListView.get(split[0]).getItems().add(new Message(Long.parseLong(aaa[0]), aaa[1], aaa[2], aaa[3]));
+              }
+            }
+            stringBuilder1.delete(0, stringBuilder1.length());
+          }
+          chatContentList.setCellFactory(new MessageCellFactory());
+          Task task = new Task() {
+            @Override
+            protected Object call() throws IOException {
                             while (true) {
                                 try {
                                     String a = bf.readLine();

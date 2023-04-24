@@ -13,14 +13,16 @@ import java.util.List;
 import java.util.Observable;
 
 
-public class MyServer extends Observable implements Runnable{
+public class MyServer extends Observable implements Runnable {
   static List<ClientThread> threadList = new ArrayList<>();
   static List<String> userList = new ArrayList<>();
   static ServerSocket serverSocket;
+  
   public MyServer() throws IOException {
     serverSocket = new ServerSocket(1234);
     new Thread(this).start();
   }
+  
   @Override
   public void run() {
     try {
@@ -48,7 +50,8 @@ public class MyServer extends Observable implements Runnable{
     private BufferedReader bf;
     DataInputStream ds;
     private OutputStream os;
-    public ClientThread (Socket socket, MyServer server) {
+    
+    public ClientThread(Socket socket, MyServer server) {
       this.socket = socket;
       this.server = server;
     }
@@ -79,16 +82,16 @@ public class MyServer extends Observable implements Runnable{
         do {
           a = bf.readLine();
           switch (a) {
-            case "userList" :
+            case "userList":
               sendUserList();
               break;
-            case "message" :
+            case "message":
               sendMessage(Integer.parseInt(bf.readLine()));
               break;
-            case "group" :
+            case "group":
               sendGroup(bf.readLine());
               break;
-            case "file" :
+            default:
               sendFile(bf.readLine());
           }
         } while (!a.equals("close"));
@@ -116,9 +119,10 @@ public class MyServer extends Observable implements Runnable{
       for (ClientThread t : threadList) {
         if (aa.contains(t.username) && !t.equals(currentThread())) {
           if (aa.size() == 1) {
-            t.os.write(("file\n" + fileName + "\n" + username + "\n" + fileLength +"\n").getBytes());
+            t.os.write(("file\n" + fileName + "\n" + username + "\n" + fileLength + "\n")
+                .getBytes());
           } else {
-            t.os.write(("file\n" + fileName + "\n" + aa + "\n" + fileLength +"\n").getBytes());
+            t.os.write(("file\n" + fileName + "\n" + aa + "\n" + fileLength + "\n").getBytes());
           }
           if (fileName.contains(".docx")) {
             t.os.write((bf.readLine() + "\n").getBytes());
@@ -127,7 +131,7 @@ public class MyServer extends Observable implements Runnable{
             long length = 0;
             long total = 0;
             ds = new DataInputStream(socket.getInputStream());
-            while ((length = ds.read(b)) != -1 ) {
+            while ((length = ds.read(b)) != -1) {
               t.os.write(b);
               t.os.flush();
               total += length;
@@ -149,7 +153,7 @@ public class MyServer extends Observable implements Runnable{
       List<String> aa = Arrays.asList(a[2].split(","));
       for (ClientThread t : threadList) {
         if (aa.contains(t.username) && !t.equals(currentThread())) {
-          t.os.write(("message\n" + time +"\n" +stringBuilder).getBytes());
+          t.os.write(("message\n" + time + "\n" + stringBuilder).getBytes());
         }
       }
     }
@@ -177,11 +181,10 @@ public class MyServer extends Observable implements Runnable{
       for (String a : userList) {
         stringBuilder.append(a).append(" ");
       }
-      stringBuilder.replace(stringBuilder.length()-1, stringBuilder.length(), "\n");
+      stringBuilder.replace(stringBuilder.length() - 1, stringBuilder.length(), "\n");
       for (ClientThread t : threadList) {
         t.os.write(stringBuilder.toString().getBytes());
       }
     }
-    }
-    
+  }
 }
